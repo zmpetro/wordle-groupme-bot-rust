@@ -19,6 +19,10 @@ lazy_static! {
     };
 }
 
+//fn send_msg(text: &str) -> () {
+//
+//}
+
 fn process_score(name: &str, score: char, user_id: &str) -> () {
     println!("Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
                 name, score, user_id)
