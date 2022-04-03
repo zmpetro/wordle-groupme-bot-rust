@@ -21,17 +21,27 @@ lazy_static! {
     };
 }
 
+fn process_cmd(cmd: &str) -> () {
+    match cmd {
+        "daily" => println!("0"),
+        "weekly" => println!("1"),
+        "all" => println!("2"),
+        "my" => println!("3"),
+        "leaderboard" => println!("4"),
+        _ => println!(
+                "Available commands:\n\nhelp - show help menu\ndaily - show daily stats\nweekly - show weekly stats\nall - show all time stats\nmy - show personal stats\nleaderboard - show ranked leaderboard\n"
+            ),
+    }
+}
+
 async fn wordle(msg: web::Json<Msg>) -> HttpResponse {
     if WORDLE_SCORE.is_match(&msg.text) {
         println!("WORDLE SCORE DETECTED")
     } else if WORDLE_CMD.is_match(&msg.text) {
-        println!("WORDLE COMMAND DETECTED")
+        let vec: Vec<&str> = msg.text.split_whitespace().collect();
+        let cmd: &str = if vec.len() >= 2 { vec[1] } else { "" };
+        process_cmd(cmd)
     }
-    // Change this to logging
-    print!("name: {}\ntext: {}\nuser_id: {}\n\n",
-                msg.name,
-                msg.text,
-                msg.user_id);
     HttpResponse::Ok().finish()
 }
 
