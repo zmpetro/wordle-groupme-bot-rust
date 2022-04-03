@@ -29,7 +29,14 @@ fn process_cmd(cmd: &str) -> () {
         "my" => println!("3"),
         "leaderboard" => println!("4"),
         _ => println!(
-                "Available commands:\n\nhelp - show help menu\ndaily - show daily stats\nweekly - show weekly stats\nall - show all time stats\nmy - show personal stats\nleaderboard - show ranked leaderboard\n"
+r#"Available commands:
+
+help - show help menu
+daily - show daily stats
+weekly - show weekly stats
+all - show all time stats
+my - show personal stats
+leaderboard - show ranked leaderboard"#
             ),
     }
 }
