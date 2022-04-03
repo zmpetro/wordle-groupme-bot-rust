@@ -19,6 +19,11 @@ lazy_static! {
     };
 }
 
+fn process_score(name: &str, score: char, user_id: &str) -> () {
+    println!("Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
+                name, score, user_id)
+}
+
 fn process_cmd(cmd: &str) -> () {
     match cmd {
         "daily" => println!("0"),
@@ -41,7 +46,9 @@ leaderboard - show ranked leaderboard"#
 
 async fn wordle(msg: web::Json<Msg>) -> HttpResponse {
     if WORDLE_SCORE.is_match(&msg.text) {
-        println!("WORDLE SCORE DETECTED")
+        let vec: Vec<&str> = msg.text.split_whitespace().collect();
+        let score: char = vec[2].chars().nth(0).unwrap();
+        process_score(&msg.name, score, &msg.user_id)
     } else if WORDLE_CMD.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let cmd: &str = if vec.len() >= 2 { vec[1] } else { "" };
