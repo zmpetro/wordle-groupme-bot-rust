@@ -1,7 +1,5 @@
-#[macro_use]
-extern crate lazy_static;
-
 use actix_web::{web, App, HttpServer, HttpResponse};
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
 
