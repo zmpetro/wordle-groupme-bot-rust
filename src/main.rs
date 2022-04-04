@@ -1,34 +1,58 @@
-use actix_web::{web, App, HttpServer, HttpResponse};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::env;
+
+const API_URL: &str = "https://api.groupme.com/v3/bots/post";
+
+struct AppData {
+    bot_id: String,
+    client: reqwest::Client,
+}
 
 #[derive(Deserialize)]
-struct Msg {
+struct RcvMsg {
     name: String,
     text: String,
     user_id: String,
 }
 
+#[derive(Serialize)]
+struct SendMsg {
+    bot_id: String,
+    text: String,
+}
+
 lazy_static! {
-    static ref WORDLE_SCORE: Regex = {
-        Regex::new(r"^Wordle\s\d+\s[1-6X]/6").unwrap()
-    };
-    static ref WORDLE_CMD: Regex = {
-        Regex::new(r"^/wordle").unwrap()
-    };
+    static ref WORDLE_SCORE: Regex = Regex::new(r"^Wordle\s\d+\s[1-6X]/6").unwrap();
+    static ref WORDLE_CMD: Regex = Regex::new(r"^/wordle").unwrap();
 }
 
-//fn send_msg(text: &str) -> () {
-//
-//}
-
-fn process_score(name: &str, score: char, user_id: &str) -> () {
-    println!("Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
-                name, score, user_id)
+async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
+    let msg = SendMsg {
+        bot_id: data.bot_id.clone(),
+        text: text,
+    };
+    data.client
+        .post(API_URL)
+        .json(&msg)
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
 }
 
-fn process_cmd(cmd: &str) -> () {
+fn process_score(data: &web::Data<AppData>, name: &str, score: char, user_id: &str) -> () {
+    println!(
+        "Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
+        name, score, user_id
+    )
+}
+
+fn process_cmd(data: &web::Data<AppData>, cmd: &str) -> () {
     match cmd {
         "daily" => println!("0"),
         "weekly" => println!("1"),
@@ -36,7 +60,7 @@ fn process_cmd(cmd: &str) -> () {
         "my" => println!("3"),
         "leaderboard" => println!("4"),
         _ => println!(
-r#"Available commands:
+            r#"Available commands:
 
 help - show help menu
 daily - show daily stats
@@ -44,27 +68,41 @@ weekly - show weekly stats
 all - show all time stats
 my - show personal stats
 leaderboard - show ranked leaderboard"#
-            ),
+        ),
     }
 }
 
-async fn wordle(msg: web::Json<Msg>) -> HttpResponse {
+async fn wordle(data: web::Data<AppData>, msg: web::Json<RcvMsg>) -> impl Responder {
     if WORDLE_SCORE.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let score: char = vec[2].chars().nth(0).unwrap();
-        process_score(&msg.name, score, &msg.user_id)
+        process_score(&data, &msg.name, score, &msg.user_id)
     } else if WORDLE_CMD.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let cmd: &str = if vec.len() >= 2 { vec[1] } else { "" };
-        process_cmd(cmd)
+        process_cmd(&data, cmd)
     }
-    HttpResponse::Ok().finish()
+    send_msg(&data, String::from("Reqwest!")).await;
+    HttpResponse::Ok()
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().route("/", web::post().to(wordle)))
-        .bind(("0.0.0.0", 9300))?
-        .run()
-        .await
+    let _bot_id: String = match env::var_os("BOT_ID") {
+        Some(val) => val.into_string().unwrap(),
+        None => panic!("BOT_ID environment variable not set"),
+    };
+    let _client = reqwest::Client::new();
+    let _app_data = web::Data::new(AppData {
+        bot_id: _bot_id,
+        client: _client,
+    });
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::clone(&_app_data))
+            .route("/", web::post().to(wordle))
+    })
+    .bind(("0.0.0.0", 9300))?
+    .run()
+    .await
 }
