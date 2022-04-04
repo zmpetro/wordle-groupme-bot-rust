@@ -29,37 +29,30 @@ lazy_static! {
     static ref WORDLE_CMD: Regex = Regex::new(r"^/wordle").unwrap();
 }
 
+#[allow(unused_must_use)]
 async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
     let msg = SendMsg {
         bot_id: data.bot_id.clone(),
         text: text,
     };
-    data.client
-        .post(API_URL)
-        .json(&msg)
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
+    data.client.post(API_URL).json(&msg).send().await;
 }
 
-fn process_score(data: &web::Data<AppData>, name: &str, score: char, user_id: &str) -> () {
+async fn process_score(data: &web::Data<AppData>, name: &str, score: char, user_id: &str) -> () {
     println!(
         "Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
         name, score, user_id
     )
 }
 
-fn process_cmd(data: &web::Data<AppData>, cmd: &str) -> () {
-    match cmd {
-        "daily" => println!("0"),
-        "weekly" => println!("1"),
-        "all" => println!("2"),
-        "my" => println!("3"),
-        "leaderboard" => println!("4"),
-        _ => println!(
+async fn process_cmd(data: &web::Data<AppData>, cmd: &str) -> () {
+    let msg: String = match cmd {
+        "daily" => String::from("daily"),
+        "weekly" => String::from("weekly"),
+        "all" => String::from("all"),
+        "my" => String::from("my"),
+        "leaderboard" => String::from("leaderboard"),
+        _ => String::from(
             r#"Available commands:
 
 help - show help menu
@@ -67,22 +60,22 @@ daily - show daily stats
 weekly - show weekly stats
 all - show all time stats
 my - show personal stats
-leaderboard - show ranked leaderboard"#
+leaderboard - show ranked leaderboard"#,
         ),
-    }
+    };
+    send_msg(data, msg).await;
 }
 
 async fn wordle(data: web::Data<AppData>, msg: web::Json<RcvMsg>) -> impl Responder {
     if WORDLE_SCORE.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let score: char = vec[2].chars().nth(0).unwrap();
-        process_score(&data, &msg.name, score, &msg.user_id)
+        process_score(&data, &msg.name, score, &msg.user_id).await
     } else if WORDLE_CMD.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let cmd: &str = if vec.len() >= 2 { vec[1] } else { "" };
-        process_cmd(&data, cmd)
+        process_cmd(&data, cmd).await
     }
-    send_msg(&data, String::from("Reqwest!")).await;
     HttpResponse::Ok()
 }
 
