@@ -1,12 +1,12 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use dotenv::dotenv;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::env;
 
-const API_URL: &str = "https://api.groupme.com/v3/bots/post";
-
 struct AppData {
+    api_url: String,
     bot_id: String,
     client: reqwest::Client,
 }
@@ -35,7 +35,11 @@ async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
         bot_id: data.bot_id.clone(),
         text: text,
     };
-    data.client.post(API_URL).json(&msg).send().await;
+    data.client
+        .post(data.api_url.clone())
+        .json(&msg)
+        .send()
+        .await;
 }
 
 async fn process_score(data: &web::Data<AppData>, name: &str, score: char, user_id: &str) -> () {
@@ -81,18 +85,22 @@ async fn wordle(data: web::Data<AppData>, msg: web::Json<RcvMsg>) -> impl Respon
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let _bot_id: String = match env::var_os("BOT_ID") {
-        Some(val) => val.into_string().unwrap(),
-        None => panic!("BOT_ID environment variable not set"),
-    };
-    let _client = reqwest::Client::new();
-    let _app_data = web::Data::new(AppData {
-        bot_id: _bot_id,
-        client: _client,
+    dotenv().ok();
+
+    let api_url = env::var("API_URL").expect("API_URL must be set");
+    let bot_id = env::var("BOT_ID").expect("BOT_ID must be set");
+
+    let client = reqwest::Client::new();
+
+    let app_data = web::Data::new(AppData {
+        api_url: api_url,
+        bot_id: bot_id,
+        client: client,
     });
+
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::clone(&_app_data))
+            .app_data(web::Data::clone(&app_data))
             .route("/", web::post().to(wordle))
     })
     .bind(("0.0.0.0", 9300))?

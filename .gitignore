@@ -15,4 +15,5 @@ Cargo.lock
 /target
 
 # Added by me
+.env
 bot_id.txt
