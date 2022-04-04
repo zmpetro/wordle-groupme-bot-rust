@@ -96,7 +96,6 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::post().to(wordle))
     })
     .bind(("0.0.0.0", 9300))?
-    .workers(1)
     .run()
     .await
 }
