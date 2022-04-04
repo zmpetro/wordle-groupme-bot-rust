@@ -1,4 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use diesel::r2d2::{self, ConnectionManager};
+use diesel::SqliteConnection;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -9,6 +11,7 @@ struct AppData {
     api_url: String,
     bot_id: String,
     client: reqwest::Client,
+    pool: r2d2::Pool<ConnectionManager<SqliteConnection>>,
 }
 
 #[derive(Deserialize)]
@@ -89,6 +92,10 @@ async fn main() -> std::io::Result<()> {
 
     let api_url = env::var("API_URL").expect("API_URL must be set");
     let bot_id = env::var("BOT_ID").expect("BOT_ID must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
+    let pool = r2d2::Pool::new(manager).unwrap();
 
     let client = reqwest::Client::new();
 
@@ -96,6 +103,7 @@ async fn main() -> std::io::Result<()> {
         api_url: api_url,
         bot_id: bot_id,
         client: client,
+        pool: pool,
     });
 
     HttpServer::new(move || {
