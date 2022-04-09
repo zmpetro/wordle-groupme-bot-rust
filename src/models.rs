@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Queryable)]
+#[derive(Debug, Queryable)]
 pub struct AllTimeStats {
     pub player_id: String,
     pub games_played: i32,

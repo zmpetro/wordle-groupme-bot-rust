@@ -46,9 +46,13 @@ async fn get_all_time_stats(data: web::Data<AppData>) -> String {
         let conn = data.pool.get()?;
         actions::get_all_time_stats(&conn)
     })
-    .await;
+    .await
+    .unwrap() // TODO: Why is response Ok(Ok()) instead of just Ok() or Err()
+    .expect("Database is corrupt or has incorrect schema");
 
-    
+    println!("{:?}", all_time_stats);
+
+    println!("{}", all_time_stats[0].total_score);
 
     String::from("ALL TIME STATS")
 }
