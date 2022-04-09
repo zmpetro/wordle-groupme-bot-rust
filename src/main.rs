@@ -34,6 +34,7 @@ lazy_static! {
 
 #[allow(unused_must_use)]
 async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
+    println!("RESPONSE:\n{}\n", text);
     let msg = SendMsg {
         bot_id: data.bot_id.clone(),
         text: text,
@@ -45,14 +46,18 @@ async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
         .await;
 }
 
-async fn process_score(data: &web::Data<AppData>, name: &str, score: char, user_id: &str) -> () {
+async fn process_score(data: &web::Data<AppData>, user_id: &str, name: &str, score: char) -> () {
     println!(
-        "Processing score:\n\nname: {}\nscore: {}/6\nuser_id: {}\n",
-        name, score, user_id
-    )
+        "RECEIVED SCORE:\nuser_id: {}\nname: {}\nscore: {}/6\n",
+        user_id, name, score
+    );
 }
 
-async fn process_cmd(data: &web::Data<AppData>, cmd: &str) -> () {
+async fn process_cmd(data: &web::Data<AppData>, user_id: &str, name: &str, cmd: &str) -> () {
+    println!(
+        "RECEIVED COMMAND:\nuser_id: {}\nname: {}\ncmd: {}\n",
+        user_id, name, cmd
+    );
     let msg: String = match cmd {
         "daily" => String::from("daily"),
         "weekly" => String::from("weekly"),
@@ -77,11 +82,11 @@ async fn wordle(data: web::Data<AppData>, msg: web::Json<RcvMsg>) -> impl Respon
     if WORDLE_SCORE.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let score: char = vec[2].chars().nth(0).unwrap();
-        process_score(&data, &msg.name, score, &msg.user_id).await
+        process_score(&data, &msg.user_id, &msg.name, score).await
     } else if WORDLE_CMD.is_match(&msg.text) {
         let vec: Vec<&str> = msg.text.split_whitespace().collect();
         let cmd: &str = if vec.len() >= 2 { vec[1] } else { "" };
-        process_cmd(&data, cmd).await
+        process_cmd(&data, &msg.user_id, &msg.name, cmd).await
     }
     HttpResponse::Ok()
 }
