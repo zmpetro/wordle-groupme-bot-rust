@@ -1,17 +1,26 @@
+#[macro_use]
+extern crate diesel;
+
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
-use diesel::SqliteConnection;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::env;
 
+mod actions;
+mod models;
+mod schema;
+
+type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+
 struct AppData {
     api_url: String,
     bot_id: String,
     client: reqwest::Client,
-    pool: r2d2::Pool<ConnectionManager<SqliteConnection>>,
+    pool: DbPool,
 }
 
 #[derive(Deserialize)]
@@ -30,6 +39,18 @@ struct SendMsg {
 lazy_static! {
     static ref WORDLE_SCORE: Regex = Regex::new(r"^Wordle\s\d+\s[1-6X]/6").unwrap();
     static ref WORDLE_CMD: Regex = Regex::new(r"^/wordle").unwrap();
+}
+
+async fn get_all_time_stats(data: web::Data<AppData>) -> String {
+    let all_time_stats = web::block(move || {
+        let conn = data.pool.get()?;
+        actions::get_all_time_stats(&conn)
+    })
+    .await;
+
+    
+
+    String::from("ALL TIME STATS")
 }
 
 #[allow(unused_must_use)]
@@ -61,7 +82,7 @@ async fn process_cmd(data: &web::Data<AppData>, user_id: &str, name: &str, cmd: 
     let msg: String = match cmd {
         "daily" => String::from("daily"),
         "weekly" => String::from("weekly"),
-        "all" => String::from("all"),
+        "all" => get_all_time_stats(web::Data::clone(&data)).await,
         "my" => String::from("my"),
         "leaderboard" => String::from("leaderboard"),
         _ => String::from(
@@ -75,7 +96,7 @@ my - show personal stats
 leaderboard - show ranked leaderboard"#,
         ),
     };
-    send_msg(data, msg).await;
+    send_msg(&data, msg).await;
 }
 
 async fn wordle(data: web::Data<AppData>, msg: web::Json<RcvMsg>) -> impl Responder {
@@ -100,7 +121,9 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
-    let pool = r2d2::Pool::new(manager).unwrap();
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create pool");
 
     let client = reqwest::Client::new();
 
