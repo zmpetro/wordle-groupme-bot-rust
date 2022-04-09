@@ -50,11 +50,19 @@ async fn get_all_time_stats(data: web::Data<AppData>) -> String {
     .unwrap() // TODO: Why is response Ok(Ok()) instead of just Ok() or Err()
     .expect("Database is corrupt or has incorrect schema");
 
-    println!("{:?}", all_time_stats);
+    if all_time_stats.len() == 0 {
+        return String::from("No stats available yet.")
+    }
 
-    println!("{}", all_time_stats[0].total_score);
+    // First, sort the stats
+    let msg: String = String::from("All Time Stats\n\n");
+    let mut num: u32 = 1;
+    for row in all_time_stats {
 
-    String::from("ALL TIME STATS")
+    }
+
+    
+    String::from("")
 }
 
 #[allow(unused_must_use)]
