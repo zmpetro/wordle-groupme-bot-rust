@@ -1,5 +1,5 @@
 #[derive(Debug, Queryable)]
-pub struct AllTimeStats {
+pub struct AggregateStats {
     pub user_id: String,
     pub games_played: i32,
     pub total_score: i32,

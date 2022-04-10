@@ -61,3 +61,8 @@ INSERT INTO names VALUES (2,"Blevins");
 INSERT INTO names VALUES (3,"Gaspack");
 INSERT INTO names VALUES (4,"Stod");
 INSERT INTO names VALUES (5,"Frail");
+INSERT INTO weekly_stats VALUES (1,9,9,9.32423423,9,9,9,9,9,9,9);
+INSERT INTO weekly_stats VALUES (3,3,3,3.3,3,3,3,3,3,3,3);
+INSERT INTO weekly_stats VALUES (5,5,5,5.392845849,5,5,5,5,5,5,5);
+INSERT INTO weekly_stats VALUES (4,4,4,4.4,4,4,4,4,4,4,4);
+INSERT INTO weekly_stats VALUES (2,2,2,2.2,2,2,2,2,2,2,2);

@@ -61,24 +61,25 @@ async fn get_names(conn: Conn) -> HashMap<String, String> {
     names_tbl
 }
 
-async fn get_all_time_stats(data: web::Data<AppData>) -> String {
+async fn get_aggregate_stats(data: web::Data<AppData>, which: bool) -> String {
+    // which: false is weekly, true is all time
     let conn_stats = data.pool.get().expect(GET_CONN_ERR_MSG);
     let conn_names = data.pool.get().expect(GET_CONN_ERR_MSG);
-    let mut all_time_stats = web::block(move || actions::get_all_time_stats(&conn_stats))
+    let mut stats = web::block(move || actions::get_aggregate_stats(&conn_stats, which))
         .await
         .unwrap() // TODO: Why is response Ok(Ok()) instead of just Ok() or Err()
         .expect(DB_ERR_MSG);
 
-    if all_time_stats.len() == 0 {
+    if stats.len() == 0 {
         return String::from("No stats available yet.");
     }
 
-    all_time_stats.sort_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap());
+    stats.sort_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap());
 
     let names = get_names(conn_names).await;
     let mut msg: String = String::from("All Time Stats\n\n");
     let mut i: u32 = 1;
-    for row in all_time_stats {
+    for row in stats {
         msg.push_str(
             &[
                 &i.to_string(),
@@ -128,8 +129,8 @@ async fn process_cmd(data: &web::Data<AppData>, user_id: &str, name: &str, cmd: 
     );
     let msg: String = match cmd {
         "daily" => String::from("daily"),
-        "weekly" => String::from("weekly"),
-        "all" => get_all_time_stats(web::Data::clone(&data)).await,
+        "weekly" => get_aggregate_stats(web::Data::clone(&data), false).await,
+        "all" => get_aggregate_stats(web::Data::clone(&data), true).await,
         "my" => String::from("my"),
         "leaderboard" => String::from("leaderboard"),
         _ => String::from(
