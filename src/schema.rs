@@ -1,6 +1,6 @@
 table! {
-    all_time_stats (player_id) {
-        player_id -> Text,
+    all_time_stats (user_id) {
+        user_id -> Text,
         games_played -> Integer,
         total_score -> Integer,
         avg_score -> Float,
@@ -15,8 +15,8 @@ table! {
 }
 
 table! {
-    daily_stats (player_id) {
-        player_id -> Text,
+    daily_stats (user_id) {
+        user_id -> Text,
         score -> Integer,
     }
 }
@@ -28,15 +28,15 @@ table! {
 }
 
 table! {
-    names (player_id) {
-        player_id -> Text,
+    names (user_id) {
+        user_id -> Text,
         name -> Text,
     }
 }
 
 table! {
-    player_ratings (player_id) {
-        player_id -> Text,
+    player_ratings (user_id) {
+        user_id -> Text,
         mu -> Float,
         sigma -> Float,
     }
@@ -49,8 +49,8 @@ table! {
 }
 
 table! {
-    weekly_stats (player_id) {
-        player_id -> Text,
+    weekly_stats (user_id) {
+        user_id -> Text,
         games_played -> Integer,
         total_score -> Integer,
         avg_score -> Float,

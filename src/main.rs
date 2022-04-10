@@ -41,8 +41,12 @@ lazy_static! {
     static ref WORDLE_CMD: Regex = Regex::new(r"^/wordle").unwrap();
 }
 
+async fn get_name(data: web::Data<AppData>, user_id: &str) -> String {
+    String::from("")
+}
+
 async fn get_all_time_stats(data: web::Data<AppData>) -> String {
-    let all_time_stats = web::block(move || {
+    let mut all_time_stats = web::block(move || {
         let conn = data.pool.get()?;
         actions::get_all_time_stats(&conn)
     })
@@ -51,18 +55,32 @@ async fn get_all_time_stats(data: web::Data<AppData>) -> String {
     .expect("Database is corrupt or has incorrect schema");
 
     if all_time_stats.len() == 0 {
-        return String::from("No stats available yet.")
+        return String::from("No stats available yet.");
     }
 
-    // First, sort the stats
-    let msg: String = String::from("All Time Stats\n\n");
-    let mut num: u32 = 1;
+    all_time_stats.sort_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap());
+    let mut msg: String = String::from("All Time Stats\n\n");
+    let mut i: u32 = 1;
     for row in all_time_stats {
-
+        msg.push_str(
+            &[
+                &i.to_string(),
+                ". ",
+                &row.user_id,
+                "\nGames played: ",
+                &row.games_played.to_string(),
+                "\nTotal score: ",
+                &row.total_score.to_string(),
+                "\nAverage score: ",
+                &row.avg_score.to_string(),
+                "/6\n\n",
+            ]
+            .concat(),
+        );
+        i += 1;
     }
 
-    
-    String::from("")
+    msg
 }
 
 #[allow(unused_must_use)]

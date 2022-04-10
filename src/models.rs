@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Queryable)]
 pub struct AllTimeStats {
-    pub player_id: String,
+    pub user_id: String,
     pub games_played: i32,
     pub total_score: i32,
     pub avg_score: f32,
@@ -13,4 +13,9 @@ pub struct AllTimeStats {
     pub num_5s: i32,
     pub num_6s: i32,
     pub num_xs: i32,
+}
+
+#[derive(Debug, Queryable)]
+pub struct Name {
+
 }
