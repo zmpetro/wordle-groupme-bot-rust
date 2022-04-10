@@ -77,8 +77,12 @@ async fn get_aggregate_stats(data: web::Data<AppData>, which: bool) -> String {
     stats.sort_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap());
 
     let names = get_names(conn_names).await;
-    let mut msg: String = String::from("All Time Stats\n\n");
-    let mut i: u32 = 1;
+    let mut msg = if which {
+        String::from("All Time Stats\n\n")
+    } else {
+        String::from("Weekly Stats\n\n")
+    };
+    let mut i = 1;
     for row in stats {
         msg.push_str(
             &[
