@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 #[derive(Debug, Queryable)]
 pub struct AllTimeStats {
     pub user_id: String,
@@ -17,5 +15,6 @@ pub struct AllTimeStats {
 
 #[derive(Debug, Queryable)]
 pub struct Name {
-
+    pub user_id: String,
+    pub name: String,
 }
