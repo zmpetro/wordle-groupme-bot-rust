@@ -8,6 +8,7 @@ use dotenv::dotenv;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env;
 
 mod actions;
@@ -15,6 +16,7 @@ mod models;
 mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+type Conn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 
 struct AppData {
     api_url: String,
@@ -36,29 +38,44 @@ struct SendMsg {
     text: String,
 }
 
+const GET_CONN_ERR_MSG: &str = "Couldn't get connection to DB";
+const DB_ERR_MSG: &str = "DB is corrupt or has incorrect schema";
+
 lazy_static! {
     static ref WORDLE_SCORE: Regex = Regex::new(r"^Wordle\s\d+\s[1-6X]/6").unwrap();
     static ref WORDLE_CMD: Regex = Regex::new(r"^/wordle").unwrap();
 }
 
-async fn get_name(data: web::Data<AppData>, user_id: &str) -> String {
-    String::from("")
+async fn get_names(conn: Conn) -> HashMap<String, String> {
+    let ids_names = web::block(move || actions::get_names(&conn))
+        .await
+        .unwrap()
+        .expect(DB_ERR_MSG);
+
+    let mut names_tbl = HashMap::new();
+
+    for id_name in ids_names {
+        names_tbl.insert(id_name.user_id, id_name.name);
+    }
+
+    names_tbl
 }
 
 async fn get_all_time_stats(data: web::Data<AppData>) -> String {
-    let mut all_time_stats = web::block(move || {
-        let conn = data.pool.get()?;
-        actions::get_all_time_stats(&conn)
-    })
-    .await
-    .unwrap() // TODO: Why is response Ok(Ok()) instead of just Ok() or Err()
-    .expect("Database is corrupt or has incorrect schema");
+    let conn_stats = data.pool.get().expect(GET_CONN_ERR_MSG);
+    let conn_names = data.pool.get().expect(GET_CONN_ERR_MSG);
+    let mut all_time_stats = web::block(move || actions::get_all_time_stats(&conn_stats))
+        .await
+        .unwrap() // TODO: Why is response Ok(Ok()) instead of just Ok() or Err()
+        .expect(DB_ERR_MSG);
 
     if all_time_stats.len() == 0 {
         return String::from("No stats available yet.");
     }
 
     all_time_stats.sort_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap());
+
+    let names = get_names(conn_names).await;
     let mut msg: String = String::from("All Time Stats\n\n");
     let mut i: u32 = 1;
     for row in all_time_stats {
@@ -66,7 +83,7 @@ async fn get_all_time_stats(data: web::Data<AppData>) -> String {
             &[
                 &i.to_string(),
                 ". ",
-                &row.user_id,
+                &names[&row.user_id],
                 "\nGames played: ",
                 &row.games_played.to_string(),
                 "\nTotal score: ",
