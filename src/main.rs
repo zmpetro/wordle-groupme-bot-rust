@@ -84,6 +84,8 @@ async fn get_aggregate_stats(data: web::Data<AppData>, which: bool) -> String {
     };
     let mut i = 1;
     for row in stats {
+        let mut avg_score = String::from(&row.avg_score.to_string());
+        avg_score.truncate(5);
         msg.push_str(
             &[
                 &i.to_string(),
@@ -94,7 +96,7 @@ async fn get_aggregate_stats(data: web::Data<AppData>, which: bool) -> String {
                 "\nTotal score: ",
                 &row.total_score.to_string(),
                 "\nAverage score: ",
-                &row.avg_score.to_string(),
+                &avg_score,
                 "/6\n\n",
             ]
             .concat(),
