@@ -114,11 +114,22 @@ async fn send_msg(data: &web::Data<AppData>, text: String) -> () {
         bot_id: data.bot_id.clone(),
         text: text,
     };
-    data.client
+    match data
+        .client
         .post(data.api_url.clone())
         .json(&msg)
         .send()
-        .await;
+        .await
+    {
+        Ok(resp) => {
+            if resp.status().is_success() {
+                println!("{}: Response sent to group\n", resp.status());
+            } else {
+                println!("{}: Couldn't send response to group\n", resp.status());
+            }
+        }
+        Err(e) => println!("{:?}", e),
+    }
 }
 
 async fn process_score(data: &web::Data<AppData>, user_id: &str, name: &str, score: char) -> () {
